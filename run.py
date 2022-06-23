@@ -1,28 +1,30 @@
-from Code.Funciones import InventarioJobs,Print_PDF,PrintJobNameDF,DriverInit
+from Code.Funciones import InventarioJobs,PrintFromExcel,Print_PDF,PrintJobNameDF,DriverInit
 import pandas as pd
 
 download_path = 		# Colocar Ruta de Descarga del navegador r'C:/Users/user/Downloads'
 output_path = 			# Colocar Ruta de para almacenar PDF
 CHROMEDRIVER_PATH = 	# Colocar Ruta de CHROMEDRIVER
+input_path = r"./Input/INPUT_JOBNAME.xlsx"
 
+PrintFromExcel(input_path,CHROMEDRIVER_PATH,download_path,output_path)
 
-table = [ #COlocar la lista de tablas a consultar
-]
+#table = [ #Colocar la lista de tablas a consultar
+#]
 
-FromDate = {	"DAILY" : "01-04-2022",			#Editar Rango de fechas para la consulta
-			"MONTHLY" : "01-02-2022"}
+#FromDate = {	"DAILY" : "01-04-2022",			#Editar Rango de fechas para la consulta
+#			"MONTHLY" : "01-02-2022"}
 
-ToDate = {	"DAILY" : "30-04-2022",
-			"MONTHLY" : "30-04-2022"}
+#ToDate = {	"DAILY" : "30-04-2022",
+#			"MONTHLY" : "30-04-2022"}
 
 #Busca los Jobs en los XML y crea un DataFrame
-Jobs_df = InventarioJobs(table)
+#Jobs_df = InventarioJobs(table)
 
 #Imprime desde scheduling los Job del DataFrame y añade al DataFrame Estado del JOB
-Jobs_df = PrintJobNameDF(Jobs_df,CHROMEDRIVER_PATH,download_path,output_path,FromDate,ToDate)
+#Jobs_df = PrintJobNameDF(Jobs_df,CHROMEDRIVER_PATH,download_path,output_path,FromDate,ToDate)
 
 #Guarda el DataFrame en Excel
-Jobs_df.to_excel("./Output/JOB-NAME-LIST.xlsx",sheet_name='JOB-NAME-LIST')
+#Jobs_df.to_excel("./Output/JOB-NAME-LIST.xlsx",sheet_name='JOB-NAME-LIST')
 
 
 #Comando para imprimir una lista de Jobs (ListJob)

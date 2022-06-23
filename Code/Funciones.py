@@ -126,7 +126,7 @@ def PrintJob(driver,JobName,FromDate,ToDate):
 	n_rows = 0
 	driver.find_element_by_id("jobname").send_keys(JobName)
 	driver.find_element_by_id("txtFromDate").send_keys(FromDate)
-	if ToDate.split('-')[2]==datetime.now().strftime('%Y'):
+	if FromDate.split('-')[2]==datetime.now().strftime('%Y'):
 		driver.find_element_by_id("txtToDate").send_keys(ToDate[:5],Keys.ENTER)
 	else:
 		driver.find_element_by_id("txtToDate").send_keys(ToDate,Keys.ENTER)
@@ -184,15 +184,22 @@ def PrintJobNameDF(DF,CHROMEDRIVER_PATH,download_path,output_path,FromDate,ToDat
 	OK_list = []
 	NOTOK_list = []
 	Observaciones_list = []
-
+	table_before=""
+	i=1
 	for index, row in DF.iterrows():
 		table_name=f'{row["Folio"]}-{row["IdTabla"]} - {row["Tabla"]}'
 		file_name = row["JOB_NAME"] if row["Tipo_JOB"] =='' else f'{row["JOB_NAME"]} - {row["Tipo_JOB"]}'
+		if table_before == row["Tabla"]:
+			i+=1
+		else: 
+			i=1
+		file_name="{:02d}. {}".format(i,file_name)
 		[n_rows,OK,NOTOK,Observaciones] =Print_PDF(driver,download_path,output_path,table_name,file_name,row["JOB_NAME"],FromDate[row["Frecuencia_Ejecucion"]],ToDate[row["Frecuencia_Ejecucion"]])
 		n_rows_list.append(n_rows)
 		OK_list.append(OK)
 		NOTOK_list.append(NOTOK)
 		Observaciones_list.append(Observaciones)
+		table_before = row["Tabla"]
 	driver.close()
 	NDF=DF
 	NDF["Ejecuciones"] = n_rows_list
@@ -217,7 +224,40 @@ def DriverInit(CHROMEDRIVER_PATH):
 	chrome_options.add_argument('--kiosk-printing')
 	return webdriver.Chrome(chrome_options=chrome_options, executable_path=CHROMEDRIVER_PATH)
 
+def PrintFromExcel(path,CHROMEDRIVER_PATH,download_path,output_path):
+	Ingestas_df = pd.read_excel(path, sheet_name='JOBNAME', dtype = 'object')
+	Tabla_df = pd.read_excel(path, sheet_name='TABLA', dtype = 'object',usecols="A").dropna()
+	Fechas_df = pd.read_excel(path, sheet_name='TABLA', dtype = 'object', index_col = 0, usecols="C:E").dropna()
+	table = Tabla_df['TABLA MASTER'].values.tolist()
+	FromDate = Fechas_df["FECHA INICIO"].dt.strftime("%d-%m-%Y").to_dict()
+	ToDate = Fechas_df["FECHA FIN"].dt.strftime("%d-%m-%Y").to_dict()
 
+	if not Ingestas_df.empty:
+		driver =  DriverInit(CHROMEDRIVER_PATH)										#Iniciamos Driver de CHROME
+		driver.get("http://172.30.9.229:8080/scheduling/ejecucionesStatus")
+		col = ["JOBNAME","Ejecuciones","OK","NOTOK","Observaciones"]		
+		JOB_list=[]
+		table_before=""
+		i=1
+		for index,data in Ingestas_df.iterrows():
+			table_name = f'{data["FOLIO-IDTABLA"]} - {data["TABLA"]}'
+			file_name = f'{data["JOBNAME"]} - {data["TIPOJOB"]}'
+			Job = data["JOBNAME"]
+			DateIn = data["FECHA INICIO"].strftime("%d-%m-%Y")
+			DateFin = data["FECHA FIN"].strftime("%d-%m-%Y")
+			if table_before == data["TABLA"]:
+				i+=1
+			else: 
+				i=1
+			file_name="{:02d}. {}".format(i,file_name)
+			[Ejecuciones,OK,NOTOK,Observaciones] = Print_PDF(driver,download_path,output_path,table_name,file_name,Job,DateIn,DateFin)	#Imprimimos JOBNAME desde scheduling
+			JOB_list.append([Job,Ejecuciones,OK,NOTOK,Observaciones])
+			table_before == data["TABLA"]
+			JOB_df=pd.DataFrame(JOB_list,columns=col)										#Creamos un DataFrame para exportar
+			JOB_df.to_excel("./Output/JOB-NAME-LIST.xlsx",sheet_name='JOB-NAME-LIST')		#Agregamos Resultado a la Lista
+		driver.close()
 
-
-
+	if len(table) != 0:
+		Jobs_Table_df = InventarioJobs(table)
+		Jobs_Table_df = PrintJobNameDF(Jobs_Table_df,CHROMEDRIVER_PATH,download_path,output_path,FromDate,ToDate)
+		Jobs_Table_df.to_excel("./Output/JOB-NAME-TABLE-LIST.xlsx",sheet_name='JOB-NAME-LIST')
