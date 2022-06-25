@@ -124,12 +124,12 @@ def PrintJob(driver,JobName,FromDate,ToDate):
 	OK_List = []
 	NOTOK_List = []
 	n_rows = 0
-	driver.find_element_by_id("jobname").send_keys(JobName)
-	driver.find_element_by_id("txtFromDate").send_keys(FromDate)
+	driver.find_element(By.ID,"jobname").send_keys(JobName)
+	driver.find_element(By.ID,"txtFromDate").send_keys(FromDate)
 	if FromDate.split('-')[2]==datetime.now().strftime('%Y'):
-		driver.find_element_by_id("txtToDate").send_keys(ToDate[:5],Keys.ENTER)
+		driver.find_element(By.ID,"txtToDate").send_keys(ToDate[:5],Keys.ENTER)
 	else:
-		driver.find_element_by_id("txtToDate").send_keys(ToDate,Keys.ENTER)
+		driver.find_element(By.ID,"txtToDate").send_keys(ToDate,Keys.ENTER)
 	try:
 		WebDriverWait(driver, 20).until(expected_conditions.presence_of_element_located((By.ID, "imprimir")))
 		load = True 
@@ -137,14 +137,14 @@ def PrintJob(driver,JobName,FromDate,ToDate):
 		print("La pagina se demoro mucho en responder")
 		driver.close()
 	if load:
-		SelectResul = driver.find_element_by_xpath('//*[@id="destino"]/div')
+		SelectResul = driver.find_element(By.XPATH,'//*[@id="destino"]/div')
 		if SelectResul.get_attribute('class') == 'isa_info':
 			Observaciones = "No hay registros"
 		else:
-			n_rows =len(driver.find_elements_by_xpath('//*[@id="tblEjec"]/tbody/tr'))
+			n_rows =len(driver.find_elements(By.XPATH,'//*[@id="tblEjec"]/tbody/tr'))
 			for row in range(1,n_rows+1):
-				ODATE = driver.find_element_by_xpath(f'//*[@id="tblEjec"]/tbody/tr[{row}]/td[8]').text
-				STATUS = driver.find_element_by_xpath(f'//*[@id="tblEjec"]/tbody/tr[{row}]/td[13]/a').text
+				ODATE = driver.find_element(By.XPATH,f'//*[@id="tblEjec"]/tbody/tr[{row}]/td[8]').text
+				STATUS = driver.find_element(By.XPATH,f'//*[@id="tblEjec"]/tbody/tr[{row}]/td[13]/a').text
 				if STATUS == "OK":
 					OK_List.append(ODATE)
 				else:
@@ -159,7 +159,7 @@ def PrintJob(driver,JobName,FromDate,ToDate):
 		#\/##\/##\/##\/##\/##\/##\/##\/##\/##
 		driver.execute_script('window.print();')
 		#/\##/\##/\##/\##/\##/\##/\##/\##/\##
-		driver.find_element_by_id('regresar').click()
+		driver.find_element(By.ID,'regresar').click()
 	return [n_rows,OK,NOTOK,Observaciones]
 
 def Print_PDF(driver,download_path,output_path,table_name,file_name,JOB_NAME,FromDate,ToDate):
