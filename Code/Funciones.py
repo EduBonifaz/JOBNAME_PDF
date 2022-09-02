@@ -189,7 +189,7 @@ def PrintJobNameDF(DF,CHROMEDRIVER_PATH,download_path,output_path,FromDate,ToDat
 	for index, row in DF.iterrows():
 		table_name=f'{row["Folio"]}-{row["IdTabla"]} - {row["Tabla"]}'
 		file_name = row["JOB_NAME"] if row["Tipo_JOB"] =='' else f'{row["JOB_NAME"]} - {row["Tipo_JOB"]}'
-		if table_before == row["Tabla"]:
+		if table_before == table_name:
 			i+=1
 		else: 
 			i=1
@@ -199,7 +199,7 @@ def PrintJobNameDF(DF,CHROMEDRIVER_PATH,download_path,output_path,FromDate,ToDat
 		OK_list.append(OK)
 		NOTOK_list.append(NOTOK)
 		Observaciones_list.append(Observaciones)
-		table_before = row["Tabla"]
+		table_before = table_name
 	driver.close()
 	NDF=DF
 	NDF["Ejecuciones"] = n_rows_list
@@ -245,14 +245,14 @@ def PrintFromExcel(path,CHROMEDRIVER_PATH,download_path,output_path):
 			Job = data["JOBNAME"]
 			DateIn = data["FECHA INICIO"].strftime("%d-%m-%Y")
 			DateFin = data["FECHA FIN"].strftime("%d-%m-%Y")
-			if table_before == data["TABLA"]:
+			if table_before == table_name:
 				i+=1
 			else: 
 				i=1
 			file_name="{:02d}. {}".format(i,file_name)
 			[Ejecuciones,OK,NOTOK,Observaciones] = Print_PDF(driver,download_path,output_path,table_name,file_name,Job,DateIn,DateFin)	#Imprimimos JOBNAME desde scheduling
 			JOB_list.append([Job,Ejecuciones,OK,NOTOK,Observaciones])
-			table_before == data["TABLA"]
+			table_before = table_name
 			JOB_df=pd.DataFrame(JOB_list,columns=col)										#Creamos un DataFrame para exportar
 			JOB_df.to_excel("./Output/JOB-NAME-LIST.xlsx",sheet_name='JOB-NAME-LIST')		#Agregamos Resultado a la Lista
 		driver.close()
