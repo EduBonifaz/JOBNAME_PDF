@@ -161,6 +161,8 @@ def PrintJob(driver,JobName,FromDate,ToDate,Imprimir):
 def Print_PDF(driver,download_path,output_path,table_name,file_name):
 	path=f'{output_path}/{table_name}'
 	os.makedirs(path, exist_ok=True)
+	while not os.path.exists(f'{download_path}/Scheduling Batch Data Prod.pdf'):
+		pass
 	if not os.path.exists(f'{path}/{file_name}.pdf'):
 		os.rename(f'{download_path}/Scheduling Batch Data Prod.pdf',f'{path}/{file_name}.pdf')
 		while not os.path.exists(f'{path}/{file_name}.pdf'):
@@ -248,6 +250,7 @@ def PrintFromExcel(path,download_path,output_path,CHROMEDRIVER_PATH,IP,Imprimir)
 			else: 
 				i=1
 			file_name="{:02d}. {}".format(i,file_name)
+			GoToURL(driver,IP,Job,DateIn,DateFin)
 			[Ejecuciones,OK,NOTOK,Observaciones] = PrintJob(driver,Job,DateIn,DateFin,Imprimir)
 			if Imprimir:
 				Print_PDF(driver,download_path,output_path,table_name,file_name)	#Imprimimos JOBNAME desde scheduling
