@@ -10,9 +10,17 @@ import json
 import os
 import re
 
+def GoToURL(driver,IP,JobName,FromDate,ToDate):
+	driver.get(f"{IP}?jobname={JobName}&txtFromDate={FromDate}&txtFromTime=00:00&txtToDate={ToDate}&txtToTime=23:59&nodeid=&foldername=&aplicacion=")
+	try:
+		WebDriverWait(driver, 20).until(expected_conditions.presence_of_element_located((By.ID, "imprimir")))
+	except:
+		print("La pagina se demoro mucho en responder")
+		driver.close()
+	return
 
 def InventarioJobs(Tablas):
-	TableroIngestas = r'./TableroIngestas/02. Tablero Seguimiento de Ingestas.xlsx'
+	TableroIngestas = r'./Code/TableroIngestas/02. Tablero Seguimiento de Ingestas.xlsx'
 	Ingestas_df = pd.read_excel(TableroIngestas, sheet_name='Concentradora Estatus',header = 1, dtype = 'object')[["#Folio","ID Tabla","SDATOOL-Nombre Proyecto","Nombre de la Tabla Master"]]
 	Ingestas_df=Ingestas_df[Ingestas_df["SDATOOL-Nombre Proyecto"]=="32335-CDD Based Reporting"]
 	col=["Tabla","JOB_NAME","JSONNAME","Tipo_JOB","Frecuencia_Ejecucion","Folio","IdTabla"]
@@ -29,10 +37,10 @@ def InventarioJobs(Tablas):
 		Folio_df =  Ingestas_df[Ingestas_df["Nombre de la Tabla Master"]==f"{Tabla}"]["#Folio"]
 		IdTabla_df = Ingestas_df[Ingestas_df["Nombre de la Tabla Master"]==f"{Tabla}"]["ID Tabla"]
 		if not Folio_df.empty:
-			Folio=Folio_df.to_string(index=False).replace("\n","_")
+			Folio=Folio_df.to_string(index=False).replace("\n","_").replace(" ","")
 		
 		if not IdTabla_df.empty:
-			IdTabla=IdTabla_df.to_string(index=False).replace("\n","_")
+			IdTabla=IdTabla_df.to_string(index=False).replace("\n","_").replace(" ","")
 
 		Lista_Temp = pd.DataFrame(BuscarJob(col,Ingesta,Tabla,UUAA,Objeto,Folio,IdTabla),columns=col)
 		Lista_df = pd.concat([Lista_df,Lista_Temp], ignore_index=True)
@@ -40,15 +48,15 @@ def InventarioJobs(Tablas):
 
 def ListarXML(Ingesta,UUAA):
 	contenido = []
-	if os.path.exists(f'./XML/{Ingesta}/{UUAA}'):
-		contenido = os.listdir(f'./XML/{Ingesta}/{UUAA}')
+	if os.path.exists(f'./Code/XML/{Ingesta}/{UUAA}'):
+		contenido = os.listdir(f'./Code/XML/{Ingesta}/{UUAA}')
 	return contenido
 
 def BuscarJob(col,Ingesta,Tabla,UUAA,Objeto,Folio,IdTabla):
 	Lista = []
 	ListXML = ListarXML(Ingesta,UUAA)
 	for XML in ListXML:
-		doc = etree.parse(f'./XML/{Ingesta}/{UUAA}/{XML}')
+		doc = etree.parse(f'./Code/XML/{Ingesta}/{UUAA}/{XML}')
 		DEFTABLE=doc.getroot()[0]
 		ListJobName=[]
 		JobList=[]
@@ -116,70 +124,58 @@ def BuscarJob(col,Ingesta,Tabla,UUAA,Objeto,Folio,IdTabla):
 					#			Buscar = True
 	return Lista
 
-def PrintJob(driver,JobName,FromDate,ToDate):
-	load = False 
+def PrintJob(driver,JobName,FromDate,ToDate,Imprimir):
 	Observaciones = ""
 	OK = ""
 	NOTOK = ""
 	OK_List = []
 	NOTOK_List = []
 	n_rows = 0
-	driver.find_element(By.ID,"jobname").send_keys(JobName)
-	driver.find_element(By.ID,"txtFromDate").send_keys(FromDate)
-	if FromDate.split('-')[2]==datetime.now().strftime('%Y'):
-		driver.find_element(By.ID,"txtToDate").send_keys(ToDate[:5],Keys.ENTER)
+
+	SelectResul = driver.find_element(By.XPATH,'//*[@id="destino"]/div')
+	if SelectResul.get_attribute('class') == 'isa_info':
+		Observaciones = "No hay registros"
 	else:
-		driver.find_element(By.ID,"txtToDate").send_keys(ToDate,Keys.ENTER)
-	try:
-		WebDriverWait(driver, 20).until(expected_conditions.presence_of_element_located((By.ID, "imprimir")))
-		load = True 
-	except:
-		print("La pagina se demoro mucho en responder")
-		driver.close()
-	if load:
-		SelectResul = driver.find_element(By.XPATH,'//*[@id="destino"]/div')
-		if SelectResul.get_attribute('class') == 'isa_info':
-			Observaciones = "No hay registros"
-		else:
-			n_rows =len(driver.find_elements(By.XPATH,'//*[@id="tblEjec"]/tbody/tr'))
-			for row in range(1,n_rows+1):
-				ODATE = driver.find_element(By.XPATH,f'//*[@id="tblEjec"]/tbody/tr[{row}]/td[8]').text
-				STATUS = driver.find_element(By.XPATH,f'//*[@id="tblEjec"]/tbody/tr[{row}]/td[13]/a').text
-				if STATUS == "OK":
-					OK_List.append(ODATE)
-				else:
-					NOTOK_List.append(ODATE)
-			OK = "{:.1f}% ({})".format((len(OK_List)/n_rows)*100,len(OK_List))
-			NOTOK = "{:.1f}% ({})".format((len(NOTOK_List)/n_rows)*100,len(NOTOK_List))
-			Dif = set(NOTOK_List).difference(set(OK_List))
-			if len(Dif) == 0:
-				Observaciones = "Sin Observaciones"
+		n_rows =len(driver.find_elements(By.XPATH,'//*[@id="tblEjec"]/tbody/tr'))
+		for row in range(1,n_rows+1):
+			ODATE = driver.find_element(By.XPATH,f'//*[@id="tblEjec"]/tbody/tr[{row}]/td[8]').text
+			STATUS = driver.find_element(By.XPATH,f'//*[@id="tblEjec"]/tbody/tr[{row}]/td[13]/a').text
+			if STATUS == "OK":
+				OK_List.append(ODATE)
 			else:
-				Observaciones = ', '.join(Dif)
-		#\/##\/##\/##\/##\/##\/##\/##\/##\/##
+				NOTOK_List.append(ODATE)
+		OK = "{:.1f}% ({})".format((len(OK_List)/n_rows)*100,len(OK_List))
+		NOTOK = "{:.1f}% ({})".format((len(NOTOK_List)/n_rows)*100,len(NOTOK_List))
+		Dif = set(NOTOK_List).difference(set(OK_List))
+		if len(Dif) == 0:
+			Observaciones = "Sin Observaciones"
+		else:
+			Observaciones = ', '.join(Dif)
+	#\/##\/##\/##\/##\/##\/##\/##\/##\/##
+	if Imprimir:
 		driver.execute_script('window.print();')
-		#/\##/\##/\##/\##/\##/\##/\##/\##/\##
-		driver.find_element(By.ID,'regresar').click()
+	#/\##/\##/\##/\##/\##/\##/\##/\##/\##
+
 	return [n_rows,OK,NOTOK,Observaciones]
 
-def Print_PDF(driver,download_path,output_path,table_name,file_name,JOB_NAME,FromDate,ToDate):
+def Print_PDF(driver,download_path,output_path,table_name,file_name):
 	path=f'{output_path}/{table_name}'
 	os.makedirs(path, exist_ok=True)
-	[n_rows,OK,NOTOK,Observaciones] = PrintJob(driver,JOB_NAME,FromDate,ToDate)
-	#\/##\/##\/##\/##\/##\/##\/##\/##\/##
 	if not os.path.exists(f'{path}/{file_name}.pdf'):
 		os.rename(f'{download_path}/Scheduling Batch Data Prod.pdf',f'{path}/{file_name}.pdf')
+		while not os.path.exists(f'{path}/{file_name}.pdf'):
+			pass
 	else:
 		i = 1
 		while os.path.exists(f'{path}/{file_name}({i}).pdf'):
 		  i += 1
 		os.rename(f'{download_path}/Scheduling Batch Data Prod.pdf',f'{path}/{file_name}({i}).pdf')
-	#/\##/\##/\##/\##/\##/\##/\##/\##/\##
-	return [n_rows,OK,NOTOK,Observaciones]
+		while not os.path.exists(f'{path}/{file_name}({i}).pdf'):
+			pass
+	return 
 
-def PrintJobNameDF(DF,CHROMEDRIVER_PATH,download_path,output_path,FromDate,ToDate):
+def PrintJobNameDF(DF,CHROMEDRIVER_PATH,download_path,output_path,FromDate,ToDate,IP,Imprimir):
 	driver =  DriverInit(CHROMEDRIVER_PATH)
-	driver.get("http://172.30.9.229:8080/scheduling/ejecucionesStatus")
 	n_rows_list = []
 	OK_list = []
 	NOTOK_list = []
@@ -194,7 +190,10 @@ def PrintJobNameDF(DF,CHROMEDRIVER_PATH,download_path,output_path,FromDate,ToDat
 		else: 
 			i=1
 		file_name="{:02d}. {}".format(i,file_name)
-		[n_rows,OK,NOTOK,Observaciones] =Print_PDF(driver,download_path,output_path,table_name,file_name,row["JOB_NAME"],FromDate[row["Frecuencia_Ejecucion"]],ToDate[row["Frecuencia_Ejecucion"]])
+		GoToURL(driver,IP,row["JOB_NAME"],FromDate[row["Frecuencia_Ejecucion"]],ToDate[row["Frecuencia_Ejecucion"]])
+		[n_rows,OK,NOTOK,Observaciones] = PrintJob(driver,row["JOB_NAME"],FromDate[row["Frecuencia_Ejecucion"]],ToDate[row["Frecuencia_Ejecucion"]],Imprimir)
+		if Imprimir:
+			Print_PDF(driver,download_path,output_path,table_name,file_name)
 		n_rows_list.append(n_rows)
 		OK_list.append(OK)
 		NOTOK_list.append(NOTOK)
@@ -224,18 +223,17 @@ def DriverInit(CHROMEDRIVER_PATH):
 	chrome_options.add_argument('--kiosk-printing')
 	return webdriver.Chrome(chrome_options=chrome_options, executable_path=CHROMEDRIVER_PATH)
 
-def PrintFromExcel(path,CHROMEDRIVER_PATH,download_path,output_path):
+def PrintFromExcel(path,download_path,output_path,CHROMEDRIVER_PATH,IP,Imprimir):
 	Ingestas_df = pd.read_excel(path, sheet_name='JOBNAME', dtype = 'object')
 	Tabla_df = pd.read_excel(path, sheet_name='TABLA', dtype = 'object',usecols="A").dropna()
 	Fechas_df = pd.read_excel(path, sheet_name='TABLA', dtype = 'object', index_col = 0, usecols="C:E").dropna()
 	table = Tabla_df['TABLA MASTER'].values.tolist()
-	FromDate = Fechas_df["FECHA INICIO"].dt.strftime("%d-%m-%Y").to_dict()
-	ToDate = Fechas_df["FECHA FIN"].dt.strftime("%d-%m-%Y").to_dict()
+	FromDate = Fechas_df["FECHA INICIO"].dt.strftime("%Y-%m-%d").to_dict()
+	ToDate = Fechas_df["FECHA FIN"].dt.strftime("%Y-%m-%d").to_dict()
 
 	if not Ingestas_df.empty:
 		driver =  DriverInit(CHROMEDRIVER_PATH)										#Iniciamos Driver de CHROME
-		driver.get("http://172.30.9.229:8080/scheduling/ejecucionesStatus")
-		col = ["JOBNAME","Ejecuciones","OK","NOTOK","Observaciones"]		
+		col = ["Tabla","JOB_NAME","JSONNAME","Tipo_JOB","Frecuencia_Ejecucion","Folio","IdTabla","Ejecuciones","OK","NOTOK","Observaciones"]		
 		JOB_list=[]
 		table_before=""
 		i=1
@@ -243,15 +241,17 @@ def PrintFromExcel(path,CHROMEDRIVER_PATH,download_path,output_path):
 			table_name = f'{data["FOLIO-IDTABLA"]} - {data["TABLA"]}'
 			file_name = f'{data["JOBNAME"]} - {data["TIPOJOB"]}'
 			Job = data["JOBNAME"]
-			DateIn = data["FECHA INICIO"].strftime("%d-%m-%Y")
-			DateFin = data["FECHA FIN"].strftime("%d-%m-%Y")
+			DateIn = data["FECHA INICIO"].strftime("%Y-%m-%d")
+			DateFin = data["FECHA FIN"].strftime("%Y-%m-%d")
 			if table_before == table_name:
 				i+=1
 			else: 
 				i=1
 			file_name="{:02d}. {}".format(i,file_name)
-			[Ejecuciones,OK,NOTOK,Observaciones] = Print_PDF(driver,download_path,output_path,table_name,file_name,Job,DateIn,DateFin)	#Imprimimos JOBNAME desde scheduling
-			JOB_list.append([Job,Ejecuciones,OK,NOTOK,Observaciones])
+			[Ejecuciones,OK,NOTOK,Observaciones] = PrintJob(driver,Job,DateIn,DateFin,Imprimir)
+			if Imprimir:
+				Print_PDF(driver,download_path,output_path,table_name,file_name)	#Imprimimos JOBNAME desde scheduling
+			JOB_list.append([data["TABLA"],Job,data["JSONNAME"],data["TIPOJOB"],data["Frecuencia_Ejecucion"],data["FOLIO-IDTABLA"].split("-")[0].replace(" ",""),data["FOLIO-IDTABLA"].split("-")[1].replace(" ",""),Ejecuciones,OK,NOTOK,Observaciones])
 			table_before = table_name
 			JOB_df=pd.DataFrame(JOB_list,columns=col)										#Creamos un DataFrame para exportar
 			JOB_df.to_excel("./Output/JOB-NAME-LIST.xlsx",sheet_name='JOB-NAME-LIST')		#Agregamos Resultado a la Lista
@@ -259,5 +259,5 @@ def PrintFromExcel(path,CHROMEDRIVER_PATH,download_path,output_path):
 
 	if len(table) != 0:
 		Jobs_Table_df = InventarioJobs(table)
-		Jobs_Table_df = PrintJobNameDF(Jobs_Table_df,CHROMEDRIVER_PATH,download_path,output_path,FromDate,ToDate)
+		Jobs_Table_df = PrintJobNameDF(Jobs_Table_df,CHROMEDRIVER_PATH,download_path,output_path,FromDate,ToDate,IP,Imprimir)
 		Jobs_Table_df.to_excel("./Output/JOB-NAME-TABLE-LIST.xlsx",sheet_name='JOB-NAME-LIST')
