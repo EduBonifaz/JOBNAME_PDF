@@ -86,7 +86,7 @@ def BuscarJob(col,Ingesta,Tabla,UUAA,Objeto,Folio,IdTabla):
 
 					if re.search(r"(?<=.pro\s).\S+(?=\s'_id)",CMDLINE):
 						JSONNAME=re.findall(r"(?<=.pro\s).\S+(?=\s'_id)",CMDLINE)[0]
-						TipoJOb = "FILE WATCHER"
+						TipoJOb = "FILEWATCHER"
 
 					if re.search(r"(?<=--transferId\s).\S+",CMDLINE):
 						JSONNAME=re.findall(r"(?<=--transferId\s).\S+",CMDLINE)[0]
@@ -148,7 +148,7 @@ def PrintJob(driver,JobName,FromDate,ToDate,Imprimir):
 		NOTOK = "{:.1f}% ({})".format((len(NOTOK_List)/n_rows)*100,len(NOTOK_List))
 		Dif = set(NOTOK_List).difference(set(OK_List))
 		if len(Dif) == 0:
-			Observaciones = "Sin Observaciones"
+			Observaciones = "Sin conderaciones"
 		else:
 			Observaciones = ', '.join(Dif)
 	#\/##\/##\/##\/##\/##\/##\/##\/##\/##

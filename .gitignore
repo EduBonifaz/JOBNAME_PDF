@@ -2,6 +2,8 @@ Code/__pycache__/
 Code/TableroIngestas/02. Tablero Seguimiento de Ingestas.xlsx
 Code/XML/Global/
 Code/XML/Local/
+Output/JOB-NAME.xlsx
+Output/JOB-NAME-RUTAS.xlsx
 Output/JOB-NAME-LIST.xlsx
 Output/JOB-NAME-TABLE-LIST.xlsx
 Output/Evidencias/**/*.pdf
