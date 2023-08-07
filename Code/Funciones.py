@@ -1,5 +1,6 @@
 from lxml import etree
 from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -9,6 +10,7 @@ import pandas as pd
 import json
 import os
 import re
+import time
 
 def GoToURL(driver,IP,JobName,FromDate,ToDate):
 	driver.get(f"{IP}?jobname={JobName}&txtFromDate={FromDate}&txtFromTime=00:00&txtToDate={ToDate}&txtToTime=23:59&nodeid=&foldername=&aplicacion=")
@@ -164,6 +166,7 @@ def Print_PDF(driver,download_path,output_path,table_name,file_name):
 	while not os.path.exists(f'{download_path}/Scheduling Batch Data Prod.pdf'):
 		pass
 	if not os.path.exists(f'{path}/{file_name}.pdf'):
+		time.sleep(1)
 		os.rename(f'{download_path}/Scheduling Batch Data Prod.pdf',f'{path}/{file_name}.pdf')
 		while not os.path.exists(f'{path}/{file_name}.pdf'):
 			pass
@@ -171,6 +174,7 @@ def Print_PDF(driver,download_path,output_path,table_name,file_name):
 		i = 1
 		while os.path.exists(f'{path}/{file_name}({i}).pdf'):
 		  i += 1
+		time.sleep(1)
 		os.rename(f'{download_path}/Scheduling Batch Data Prod.pdf',f'{path}/{file_name}({i}).pdf')
 		while not os.path.exists(f'{path}/{file_name}({i}).pdf'):
 			pass
@@ -223,7 +227,7 @@ def DriverInit(CHROMEDRIVER_PATH):
 	prefs = {"printing.print_preview_sticky_settings.appState": json.dumps(settings)}
 	chrome_options.add_experimental_option('prefs', prefs)
 	chrome_options.add_argument('--kiosk-printing')
-	return webdriver.Chrome(chrome_options=chrome_options, executable_path=CHROMEDRIVER_PATH)
+	return webdriver.Chrome(service=Service(), options=chrome_options)
 
 def PrintFromExcel(path,download_path,output_path,CHROMEDRIVER_PATH,IP,Imprimir):
 	Ingestas_df = pd.read_excel(path, sheet_name='JOBNAME', dtype = 'object')

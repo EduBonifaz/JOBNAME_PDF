@@ -116,7 +116,7 @@ for item,row in Tablas_df.iterrows():
 				WebDriverWait(driver, 20).until(expected_conditions.presence_of_element_located((By.XPATH,'/html/body/pre')))
 				time.sleep(0.2)
 				JsonText = driver.find_element(By.XPATH,'/html/body/pre').text
-				Size = re.findall(r"(?<=\"size\"\s\:\s\")[A-Z]{1,2}(?=\"\,)",JsonText)[0]
+				Size = re.findall(r"(?<=\"size\"\s\:\s\")[A-Z]{1,3}(?=\"\,)",JsonText)[0]
 				
 
 			except:
@@ -192,7 +192,7 @@ for item,row in Tablas_df.iterrows():
 				WebDriverWait(driver, 20).until(expected_conditions.presence_of_element_located((By.XPATH,'/html/body/pre')))
 				time.sleep(0.2)
 				JsonText = driver.find_element(By.XPATH,'/html/body/pre').text
-				Size = re.findall(r"(?<=\"size\"\s\:\s\")[A-Z]{1,2}(?=\")",JsonText)[0]
+				Size = re.findall(r"(?<=\"size\"\s\:\s\")[A-Z]{1,3}(?=\")",JsonText)[0]
 
 			except:
 				print(row["JSONNAME"],"Fallo1")
